@@ -1,9 +1,8 @@
 name: CICD_Employee_fullstack
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
 env:
   DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
