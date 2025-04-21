@@ -5,7 +5,7 @@ metadata:
   namespace: emp
 
 spec:
-  Ports:
+  ports:
     - name: backend
       port: 8080
       targetPort: 8080
