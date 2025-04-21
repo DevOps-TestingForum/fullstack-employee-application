@@ -49,7 +49,7 @@ jobs:
           distribution: 'temurin'
 
       - name: docker_setup
-        working-directory: employeemanagementbackend
+        working-directory: employeemanagmentbackend
         run: |
           docker build -t emp_backend:latest .
 
