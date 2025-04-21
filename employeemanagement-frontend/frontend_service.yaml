@@ -5,7 +5,7 @@ metadata:
   namespace: emp
 
 spec:
-  Ports:
+  ports:
     - name: frontend
       port: 80
       targetPort: 3000
