@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: docker_setup
-        directory: employeemanagement-frontend
+        working-directory: employeemanagement-frontend
         run: |
           docker build -t emp_frontend:latest .
 
@@ -48,7 +48,7 @@ jobs:
           distribution: 'temurin'
 
       - name: docker_setup
-        directory: employeemanagementbackend
+        working-directory: employeemanagementbackend
         run: |
           docker build -t emp_backend:latest .
 
