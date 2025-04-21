@@ -1,0 +1,15 @@
+apiversion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: emp
+
+spec:
+  Ports:
+    - name: frontend
+      port: 80
+      targetPort: 3000
+  
+  selector:
+    app: frontend
+  type: NodePort
