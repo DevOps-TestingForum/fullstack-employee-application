@@ -22,6 +22,7 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: docker_setup
+        directory: employeemanagement-frontend
         run: |
           docker build -t emp_frontend:latest .
 
@@ -35,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: Development
-      
+
     steps:
       - name: Checkout_code
         uses: actions/checkout@v4
@@ -47,6 +48,7 @@ jobs:
           distribution: 'temurin'
 
       - name: docker_setup
+        directory: employeemanagementbackend
         run: |
           docker build -t emp_backend:latest .
 
