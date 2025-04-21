@@ -33,6 +33,7 @@ jobs:
           docker push verbose2001/emp_frontend:latest
       
   build_backend:
+    needs: [build_frontend]
     runs-on: ubuntu-latest
     environment:
       name: Development
@@ -59,6 +60,7 @@ jobs:
           docker push verbose2001/emp_backend:latest
 
   deploy:
+    needs: [build_backend]
     runs-on: self-hosted
     steps:
 
