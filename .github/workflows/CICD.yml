@@ -64,6 +64,9 @@ jobs:
     runs-on: self-hosted
     steps:
 
+      - name: Checkout_code
+        uses: actions/checkout@v4
+      
       - name: creating_namespace
         run: |
           kubectl get ns emp || kubectl create ns emp
