@@ -1,60 +1,99 @@
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: mysql-volume
-  namespace: emp
-spec:
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /hosthome/bhuvan/kubernetes/whatsapp/sql-data
-  persistentVolumeReclaimPolicy: Retain
+name: CICD_Employee_fullstack
 
----
+on:
+  workflow_dispatch:
 
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-  namespace: emp
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
+env:
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
 
----
+jobs:
+  build_frontend:
+    runs-on : ubuntu-latest
+    environment:
+      name: Development
 
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: database-deployment
-  namespace: emp
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: database
-  template:
-    metadata:
-      labels:
-        app: database
-    spec:
-      containers:
-        - name: database
-          image: mysql:8.0
-          ports:
-            - containerPort: 3306
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "Admin@123"
-          volumeMounts:
-            - name: mysql-volume
-              mountPath: /var/lib/mysql
-      volumes:
-        - name: mysql-volume
-          persistentVolumeClaim:
-            claimName: mysql-pvc
+    steps:
+      - name: Checkout_code
+        uses: actions/checkout@v4
+
+      - name: setup_node
+        uses: actions/setup-node@v4
+
+      - name: docker_setup
+        working-directory: employeemanagement-frontend
+        run: |
+          docker build -t emp_frontend:latest .
+
+      - name: docker_push
+        run: |
+          docker tag emp_frontend:latest verbose2001/emp_frontend:latest
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          docker push verbose2001/emp_frontend:latest
+
+  sql_setup:
+    needs: [build_frontend]
+    runs-on: self-hosted
+    environment:
+      name: Development
+
+    steps:
+      - name: checkout_code
+        uses: actions/checkout@v4
+
+      - name: run_sql
+        working-directory: employeemanagmentbackend
+        run: |
+          kubectl apply -f database.yaml
+
+
+  build_backend:
+    needs: [sql_setup]
+    runs-on: ubuntu-latest
+    environment:
+      name: Development
+
+    steps:
+      - name: Checkout_code
+        uses: actions/checkout@v4
+
+      - name: setup_java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: docker_setup
+        working-directory: employeemanagmentbackend
+        run: |
+          docker build -t emp_backend:latest .
+
+      - name: docker_push
+        run: |
+          docker tag emp_backend:latest verbose2001/emp_backend:latest
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          docker push verbose2001/emp_backend:latest
+
+  deploy:
+    needs: [build_backend]
+    runs-on: self-hosted
+    steps:
+
+      - name: Checkout_code
+        uses: actions/checkout@v4
+      
+      - name: creating_namespace
+        run: |
+          kubectl get ns emp || kubectl create ns emp
+
+      - name: deploy_frontend
+        working-directory: employeemanagement-frontend
+        run: |
+          kubectl apply -f frontend_deployment.yaml
+          kubectl apply -f frontend_service.yaml
+
+      - name: deploy_backend
+        working-directory: employeemanagmentbackend
+        run: |
+          kubectl apply -f backend_deployment.yaml
+          kubectl apply -f backend_service.yaml
