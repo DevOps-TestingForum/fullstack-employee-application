@@ -30,9 +30,24 @@ jobs:
           docker tag emp_frontend:latest verbose2001/emp_frontend:latest
           echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
           docker push verbose2001/emp_frontend:latest
-      
+
+  sql_setup:
+    runs-on: self-hosted
+    environment:
+      name: Development
+
+    steps:
+      - name: checkout_code
+        uses: actions/checkout@v4
+
+      - name: run_sql
+        working-directory: employeemanagmentbackend
+        run: |
+          kubectl apply -f database.yaml
+
+
   build_backend:
-    needs: [build_frontend]
+    needs: [sql_setup]
     runs-on: ubuntu-latest
     environment:
       name: Development
