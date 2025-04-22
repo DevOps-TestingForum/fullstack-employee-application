@@ -11,9 +11,7 @@ spec:
   hostPath:
     path: /hosthome/bhuvan/kubernetes/whatsapp/sql-data
   persistentVolumeReclaimPolicy: Retain
-
 ---
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -24,10 +22,8 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
-
+      storage: 1Gi
 ---
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,24 +33,38 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: database
+      app: mysql
   template:
     metadata:
       labels:
-        app: database
+        app: mysql
     spec:
       containers:
-        - name: database
+        - name: mysql
           image: mysql:8.0
-          ports:
-            - containerPort: 3306
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "Admin@123"
+              value: Admin@123
+            - name: MYSQL_DATABASE
+              value: emp
+          ports:
+            - containerPort: 3306
           volumeMounts:
-            - name: mysql-volume
+            - name: mysql-storage
               mountPath: /var/lib/mysql
       volumes:
-        - name: mysql-volume
+        - name: mysql-storage
           persistentVolumeClaim:
             claimName: mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: emp
+spec:
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
