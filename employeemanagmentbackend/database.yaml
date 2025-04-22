@@ -1,9 +1,38 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-volume
+  namespace: emp
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /hosthome/bhuvan/kubernetes/whatsapp/sql-data
+  persistentVolumeReclaimPolicy: Retain
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: emp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: database-deployment
   namespace: emp
-
 spec:
   replicas: 1
   selector:
@@ -18,42 +47,14 @@ spec:
         - name: database
           image: mysql:8.0
           ports:
-            - containerPort: 3006
+            - containerPort: 3306
           env:
             - name: MYSQL_ROOT_PASSWORD
               value: "Admin@123"
           volumeMounts:
-            - name: sql-data
+            - name: mysql-volume
               mountPath: /var/lib/mysql
       volumes:
         - name: mysql-volume
           persistentVolumeClaim:
             claimName: mysql-pvc
-
----
-
-apiVersion: v1
-kind: persistentVolume
-metadata:
-  name: mysql-volume
-  namespace: emp
-spec:
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /hosthome/bhuvan/kubernetes/whatsapp/sql-data
-
----
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
