@@ -1,0 +1,386 @@
+# Default values for helm_design.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+replicaCount: 1
+
+# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
+image:
+  repository: nginx
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+imagePullSecrets: []
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
+service:
+  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
+  port: 80
+
+# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+
+# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+idpapp:
+  name: idpapp
+  namespace: helm-test
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  imagePullPolicy: IfNotPresent
+  containerPort: 8080
+  envFrom:
+    - configMapRef:
+        name: props
+        optional: false
+
+miniotransferpod:
+  name: task-pv-pod
+  namespace: helm-test
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  volumes:
+    - name: task-pv-volume
+      persistentVolumeClaim:
+        claimName: minio-pvc
+  volumeMounts:
+    - name: task-pv-container
+      mountPath: "/data"
+  image: nginx
+  resources:
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+  imagePullPolicy: IfNotPresent
+  ports:
+    - containerPort: 80
+      name: "http-server"
+  envFrom:
+    - configMapRef:
+        name: props
+        optional: false
+
+minio:
+  name: minio
+  namespace: helm-test
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  volumes:
+    - name: minio-data
+      persistentVolumeClaim:
+        claimName: minio-pvc
+  volumeMounts:
+    - name: minio-data
+      mountPath: "/data/"
+  image: jfrog.io/alpha/alpha:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  imagePullPolicy: IfNotPresent
+  containerPort: 9000
+  envFrom:
+    - configMapRef:
+        name: registry-props
+        optional: false
+    - secretRef:
+        name: registry-secrets
+        optional: false
+
+minio-pvc:
+  name: idp-minio-pvc
+  namespace: helm-test
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard-rwo
+
+cluster-secret:
+  name: clustersecrets
+  namespace: helm-test
+  CIPHER_KEY:
+  DB_PASSWORD:
+  SECRET_TOKEN:
+  PLATFORM_KEY:
+
+registry:
+  name: registry
+  namespace: helm-test
+  volumeName: secret-volume
+  secretName: registry-secrets
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  volumeMounts:
+    - name: secret-volume
+      mountPath: "/var/idp-config"
+  imagePullPolicy: IfNotPresent
+  containerPort: 9092
+  envFrom:
+    - configMapRef:
+        name: registry-props
+        optional: false
+
+portfolio:
+  name: portfolio
+  namespace: helm-test
+  volumeName: secret-volume
+  secretName: clustersecrets
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  volumeMounts:
+    - name: secret-volume
+      mountPath: "/var/idp-config"
+  imagePullPolicy: IfNotPresent
+  containerPort: 8889
+  envFrom:
+    - configMapRef:
+        name: clusterprops
+        optional: false
+
+events-bridge:
+  name: events-bridge
+  namespace: helm-test
+  volumeName: secret-volume
+  secretName: clustersecrets
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  volumeMounts:
+    - name: secret-volume
+      mountPath: "/var/idp-config"
+  imagePullPolicy: IfNotPresent
+  containerPort: 8083
+  envFrom:
+    - configMapRef:
+        name: clusterprops
+        optional: false
+    - secretRef:
+        name: clustersecrets
+        optional: false
+
+dashboard:
+  name: dashboard
+  namespace: helm-test
+  volumeName: secret-volume
+  secretName: clustersecrets
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  volumeMounts:
+    - name: secret-volume
+      mountPath: "/var/idp-config"
+  imagePullPolicy: IfNotPresent
+  containerPort: 9090
+  envFrom:
+    - configMapRef:
+        name: clusterprops
+        optional: false
+    - secretRef:
+        name: clustersecrets
+        optional: false
+
+mongodb:
+  name: mongo
+  namespace: helm-test
+  volumes:
+    - name: mongo-data
+      persistentVolumeClaim:
+        claimName: mongo-pvc
+  imagePullSecrets:
+    name: jfrog-secret
+  nodeSelector:
+    app: agcore
+  tolerations:
+    key: app
+    value: agcore
+  image: jfrog.io/alpha/idpapp:latest
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  volumeMounts:
+    - name: mongo-data
+      mountPath: "/data/db"
+  containerPort: 27017
+  env:
+    - name: MONGO_INITDB_ROOT_USERNAME
+      valueFrom:
+        configMapKeyRef:
+          name: clusterprops
+          key: DB_USER
+          optional: false
+    - name: MONGO_INITDB_ROOT_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: clustersecrets
+          key: DB_PASSWORD
+          optional: false
+    - name: wiredTigerCacheSIzeGB
+      value: "0.25"
+
+mongo-pvc:
+  name: mongo-pvc
+  namespace: helm-test
+  resources:
+    requests:
+      storage: 25Gi
+  storageClassName: standard-rwo

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.idpapp.name | default "idpapp" }}
+  namespace: {{ .Values.idpapp.namespace | default "helm-test" }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.idpapp.name | default "idpapp" }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.idpapp.name | default "idpapp" }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.idpapp.imagePullSecrets.name | default "jfrog-secret" }}
+      {{- include "Node_affinity" . | nindent 6 }}
+      containers:
+        - name: {{ .Values.idpapp.name | default "idpapp" }}
+          {{- include "securityContext" . | nindent 10 }}
+          image: {{ .Values.idpapp.image }}
+          imagePullPolicy: {{ .Values.idpapp.imagePullPolicy }}
+          {{- with .Values.idpapp.resources }}
+          resources:
+            {{ toYaml . | nindent 12 }}
+          {{- end }}
+          {{- include "probes" (dict "contanerPort" .Values.idpapp.containerPort ) | nindent 10 }}
+          ports:
+            - containerPort: {{ .Values.idpapp.containerPort | default 8080 }}
+          envFrom:
+            {{ toYaml .Values.idpapp.envFrom | nindent 12 }}

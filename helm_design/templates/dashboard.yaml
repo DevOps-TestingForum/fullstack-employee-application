@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.dashboard.name | default "dashboard" }}
+  namespace: {{ .Values.dashboard.namespace | default "helm-test" }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.dashboard.name | default "dashboard" }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.dashboard.name | default "dashboard" }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.dashboard.imagePullSecrets.name | default "jfrog-secret" }}
+      {{- include "Node_affinity" . | nindent 6 }}
+      volumes:
+        - name: {{ .Values.dashboard.volumeName | default "secret-volume" }}
+          secret:
+            secretName: {{ .Values.dashboard.secretName | default "clustersecrets" }}
+      containers:
+        - name: {{ .Values.dashboard.name | default "dashboard" }}
+          {{- include "securityContext" . | nindent 10 }}
+          image: {{ .Values.dashboard.image }}
+          imagePullPolicy: {{ .Values.dashboard.imagePullPolicy }}
+          volumeMounts:
+            {{ toYaml .Values.dashboard.volumeMounts | nindent 12 }}
+          {{- with .Values.dashboard.resources }}
+          resources:
+            {{ toYaml . | nindent 12 }}
+          {{- else }}
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.dashboard.containerPort | default 9090 }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.dashboard.containerPort | default 9090 }}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
+          ports:
+            - containerPort: {{ .Values.dashboard.containerPort | default 9090 }}
+          envFrom:
+            {{ toYaml .Values.dashboard.envFrom | nindent 12 }}

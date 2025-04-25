@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.minio.name | default "minio" }}
+  namespace: {{ .Values.minio.namespace | default "helm-test" }}
+
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.minio.name | default "minio" }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.minio.name | default "minio" }}
+    spec:
+      imagePullSecrets:
+        - name: {{ .Values.minio.imagePullSecrets.name | default "jfrog-secret" }}
+      {{- include "Node_affinity" . | nindent 6 }}
+      {{- with .Values.minio.volumes }}
+      volumes:
+        {{- toYaml . | nindent 6 }}
+      {{- else }}
+      volumes: []
+      {{- end }}
+      containers:
+        - name: {{ .Values.minio.name | default "minio" }}
+          args:
+            - server
+            - --console-address
+            - :30111
+            - /data
+          image: {{ .Values.minio.image }}
+          imagePullPolicy: {{ .Values.minio.imagePullPolicy }}
+          {{- with .Values.minio.resources }}
+          resources:
+            {{ toYaml . | nindent 12 }}
+          {{- else }}
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          {{- end }}
+          {{ with .Values.minio.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 10 }}
+          {{- else }}
+          volumeMounts: []
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.minio.containerPort | default 9000 }}
+          {{- with .Values.minio.envFrom }}
+          envFrom:
+            {{ toYaml . | nindent 10 }}
+          {{- end }}
